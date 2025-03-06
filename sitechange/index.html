@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="./icons/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Rotation History</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="manifest" href="./manifest.json">
+</head>
+
+<body onload="loadHistory()">
+    <div id="site-container">
+        <div class="sticky-header">
+            <div id="toggle-view">
+                <i class="fas fa-sign-out-alt" id="logout-icon" style="color:black;font-size: 18px;" onclick="handleLogout()"></i>
+                <i class="fa-solid fa-rotate-left" style="color:blue;font-size: 24px;" onclick="toggleView()"></i>
+            </div>
+            <div class="toggle-wrapper">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-switch">
+                        <span class="slider round"></span>
+                    </label>
+                    <span id="toggle-state">Read Only</span>
+                </div>
+            </div>
+            <h2>Site Rotation History</h2>
+        </div>
+        <div class="table-container">
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Site</th>
+                        <th colspan="3">Days Since Last used</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="backup-restore" style="display: none;">
+        <div class="sticky-header">
+            <div id="toggle-view">
+                <i class="fas fa-sign-out-alt" id="logout-icon" style="color:black;font-size: 18px;" onclick="handleLogout()"></i>
+                <i class="fa-regular fa-pen-to-square" style="color:blue;font-size: 24px;" onclick="toggleView()"></i>
+            </div>
+            <h2>Backup Restore</h2>
+        </div>
+        <div id="rTab" class="table-container">
+            <table id="backup-table">
+                <thead>
+                    <tr>
+                        <th>Date and Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div id="bTab" class="table-container" style="display: none;">
+            <div class="sticky-header">
+                <i class="fa-solid fa-arrow-left" style="font-size:24px;color:blue; cursor:pointer; float:center;"
+                    onclick="backToRestore()"></i>
+            </div>
+            <table id="backupTable">
+                <thead>
+                    <tr>
+                        <th>Site</th>
+                        <th colspan="3">Days Since Last used</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="static/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then((registration) => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+    <script>
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            deferredPrompt = event;
+            showInstallButton();
+        });
+
+        function showInstallButton() {
+            const installButton = document.createElement('button');
+            installButton.innerText = 'Install App';
+            installButton.style.position = 'fixed';
+            installButton.style.bottom = '20px';
+            installButton.style.right = '20px';
+            installButton.style.padding = '10px 20px';
+            installButton.style.backgroundColor = '#4f8b0f';
+            installButton.style.color = '#fff';
+            installButton.style.border = 'none';
+            installButton.style.borderRadius = '5px';
+            installButton.style.cursor = 'pointer';
+            installButton.style.zIndex = '1000';
+            installButton.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            };
+            document.body.appendChild(installButton);
+        }
+    </script>
+    <div id="siteModal" class="modal">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+    <div id="responseModal" class="modal">
+        <div class="modal-content" id="responseContent"></div>
+    </div>
+</body>
+
+</html>
