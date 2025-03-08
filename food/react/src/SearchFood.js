@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFood } from './SelectionProvider';
+import fetchHandleRedirect from './fetchWithHandleRedirect';
 
 const SearchFood = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,7 +11,7 @@ const SearchFood = () => {
     setSearchQuery(event.target.value);
     if (event.target.value.length >= 3) {
       // Make Fetch request to fetch food suggestions
-      fetch("api?q=" + encodeURIComponent(event.target.value))
+      fetchHandleRedirect("api?q=" + encodeURIComponent(event.target.value))
         .then(response => {
           if (!response.ok) {
             throw new Error("Network response was not ok");
