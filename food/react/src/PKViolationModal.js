@@ -7,7 +7,7 @@ const PKViolationModal = ({ isOpen, onClose, foodRecord, dataObj }) => {
     // Handle the PUT request to update the food record
     const handleUpdateFood = () => {
         onClose();
-        fetch("api", {
+        fetchWithAuth("api", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
