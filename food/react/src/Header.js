@@ -1,13 +1,15 @@
 import React from 'react';
-import fetchHandleRedirect from './fetchWithHandleRedirect';
 
 const Header = () => {
     const handleLogout = async () => {
         try {
-            const response = await fetchHandleRedirect('../logout', {
+            const response = await fetch('../logout', {
                 method: 'GET',
             });
-            if (!response.ok) {
+    
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (!response.ok) {
                 console.error('Logout failed:', response.statusText);
             }
         } catch (error) {

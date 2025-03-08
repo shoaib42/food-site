@@ -1,14 +1,13 @@
 import React from 'react';
 import Modal from './Modal';
 import useModal from './useModal';
-import fetchHandleRedirect from './fetchWithHandleRedirect';
 
 const PKViolationModal = ({ isOpen, onClose, foodRecord, dataObj }) => {
     const { isOpen: showModal, message: modalMessage, openModal, closeModal } = useModal(); // Using the useModal hook
     // Handle the PUT request to update the food record
     const handleUpdateFood = () => {
         onClose();
-        fetchHandleRedirect("api", {
+        fetch("api", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
