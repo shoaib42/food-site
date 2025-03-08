@@ -3,7 +3,6 @@ import Modal from './Modal';
 import useModal from './useModal';
 import usePkModal from './usePkModal';
 import PKViolationModal from './PKViolationModal';
-import fetchHandleRedirect from './fetchWithHandleRedirect';
 
 const AddFood = () => {
     const [newFood, setNewFood] = useState('');
@@ -21,7 +20,7 @@ const AddFood = () => {
             newGramsOfCarbs
         };
         
-        fetchHandleRedirect("api", {
+        fetch("api", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
