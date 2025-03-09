@@ -14,7 +14,6 @@ const ASSETS = [
   './icons/icon-512x512.png'
 ];
 
-
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -22,13 +21,22 @@ self.addEventListener('install', (event) => {
   );
 });
 
-
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => response || fetch(event.request))
   );
 });
+
+
+const fetchHandleRedirect = async (url, options = {}) => {
+    const response = await fetch(url, options);
+    if (response.redirected) {
+        window.location.href = response.url;
+        throw new Error("Redirecting..."); // Throw an error to stop further processing
+    }
+    return response;
+};
 
 
 toggleSwitch.addEventListener('change', function() {
@@ -40,146 +48,158 @@ toggleSwitch.addEventListener('change', function() {
 });
 
 async function loadHistory() {
-    const response = await fetch("history");
-    const data = await response.json();
-    const now = Date.now();
+    try {
+        const response = await fetchHandleRedirect("history");
+        const data = await response.json();
+        const now = Date.now();
 
-    if (data.error) {
-        document.body.innerHTML = `<h3 style="color: red;">${data.error}</h3>`;
-        return;
+        if (data.error) {
+            document.body.innerHTML = `<h3 style="color: red;">${data.error}</h3>`;
+            return;
+        }
+
+        
+        originalData = JSON.parse(JSON.stringify(data));
+
+        const tbody = document.querySelector("#historyTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(site => {
+            site.oldestDaysAgo = getDaysAgo(now, site.oldest);
+            site.beforeLastDaysAgo = getDaysAgo(now, site.beforeLast);
+            site.lastDaysAgo = getDaysAgo(now, site.last);
+        });
+
+        data.sort((a, b) => {
+            const aPriority = a.lastDaysAgo === null ? -1 : 0;
+            const bPriority = b.lastDaysAgo === null ? -1 : 0;
+        
+            return (
+                aPriority - bPriority ||
+                b.lastDaysAgo - a.lastDaysAgo || 
+                b.beforeLastDaysAgo - a.beforeLastDaysAgo || 
+                b.oldestDaysAgo - a.oldestDaysAgo
+            );
+        });
+
+        
+        const allDays = {
+            oldest: data.map(site => site.oldestDaysAgo),
+            beforeLast: data.map(site => site.beforeLastDaysAgo),
+            last: data.map(site => site.lastDaysAgo)
+        };
+
+        const minMax = {
+            oldest: [Math.min(...allDays.oldest), Math.max(...allDays.oldest)],
+            beforeLast: [Math.min(...allDays.beforeLast), Math.max(...allDays.beforeLast)],
+            last: [Math.min(...allDays.last), Math.max(...allDays.last)]
+        };
+
+        data.forEach(site => {
+            const row = document.createElement("tr");
+            row.classList.add("hover-effect");
+
+            function replaceNull(d) { return d === null ? "Never" : d }
+
+            row.innerHTML = 
+                `<td>${site.site}</td>
+                
+                <td style="background-color: ${getGradientColor(site.oldestDaysAgo, minMax.oldest)}">
+                    ${replaceNull(site.oldestDaysAgo)}
+                </td>
+                <td style="background-color: ${getGradientColor(site.beforeLastDaysAgo, minMax.beforeLast)}">
+                    ${replaceNull(site.beforeLastDaysAgo)}
+                </td>
+                <td style="background-color: ${getGradientColor(site.lastDaysAgo, minMax.last)}">
+                    ${replaceNull(site.lastDaysAgo)}
+                </td>`;
+
+            row.addEventListener("click", () => handleRowClick(row, site));
+
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        if (error.message !== "Redirecting...") {
+            console.error("Fetch failed:", error);
+        }
     }
-
-    
-    originalData = JSON.parse(JSON.stringify(data));
-
-    const tbody = document.querySelector("#historyTable tbody");
-    tbody.innerHTML = "";
-
-    data.forEach(site => {
-        site.oldestDaysAgo = getDaysAgo(now, site.oldest);
-        site.beforeLastDaysAgo = getDaysAgo(now, site.beforeLast);
-        site.lastDaysAgo = getDaysAgo(now, site.last);
-    });
-
-    data.sort((a, b) => {
-        const aPriority = a.lastDaysAgo === null ? -1 : 0;
-        const bPriority = b.lastDaysAgo === null ? -1 : 0;
-    
-        return (
-            aPriority - bPriority ||
-            b.lastDaysAgo - a.lastDaysAgo || 
-            b.beforeLastDaysAgo - a.beforeLastDaysAgo || 
-            b.oldestDaysAgo - a.oldestDaysAgo
-        );
-    });
-
-    
-    const allDays = {
-        oldest: data.map(site => site.oldestDaysAgo),
-        beforeLast: data.map(site => site.beforeLastDaysAgo),
-        last: data.map(site => site.lastDaysAgo)
-    };
-
-    const minMax = {
-        oldest: [Math.min(...allDays.oldest), Math.max(...allDays.oldest)],
-        beforeLast: [Math.min(...allDays.beforeLast), Math.max(...allDays.beforeLast)],
-        last: [Math.min(...allDays.last), Math.max(...allDays.last)]
-    };
-
-    data.forEach(site => {
-        const row = document.createElement("tr");
-        row.classList.add("hover-effect");
-
-        function replaceNull(d) { return d === null ? "Never" : d }
-
-        row.innerHTML = 
-            `<td>${site.site}</td>
-            
-            <td style="background-color: ${getGradientColor(site.oldestDaysAgo, minMax.oldest)}">
-                ${replaceNull(site.oldestDaysAgo)}
-            </td>
-            <td style="background-color: ${getGradientColor(site.beforeLastDaysAgo, minMax.beforeLast)}">
-                ${replaceNull(site.beforeLastDaysAgo)}
-            </td>
-            <td style="background-color: ${getGradientColor(site.lastDaysAgo, minMax.last)}">
-                ${replaceNull(site.lastDaysAgo)}
-            </td>`;
-
-        row.addEventListener("click", () => handleRowClick(row, site));
-
-        tbody.appendChild(row);
-    });
 }
 
 async function loadBackupTable(epoch) {
-    const response = await fetch("revert/?q="+epoch);
-    const data = await response.json();
-    const now = Date.now();
+    try {
+        const response = await fetchHandleRedirect("revert/?q="+epoch);
+        const data = await response.json();
+        const now = Date.now();
 
-    if (data.error) {
-        document.body.innerHTML = `<h3 style="color: red;">${data.error}</h3>`;
-        return;
-    }
+        if (data.error) {
+            document.body.innerHTML = `<h3 style="color: red;">${data.error}</h3>`;
+            return;
+        }
 
-    const tbody = document.querySelector("#backupTable tbody");
-    tbody.innerHTML = "";
+        const tbody = document.querySelector("#backupTable tbody");
+        tbody.innerHTML = "";
 
-    data.forEach(site => {
-        site.oldestDaysAgo = getDaysAgo(now, site.oldest);
-        site.beforeLastDaysAgo = getDaysAgo(now, site.beforeLast);
-        site.lastDaysAgo = getDaysAgo(now, site.last);
-    });
+        data.forEach(site => {
+            site.oldestDaysAgo = getDaysAgo(now, site.oldest);
+            site.beforeLastDaysAgo = getDaysAgo(now, site.beforeLast);
+            site.lastDaysAgo = getDaysAgo(now, site.last);
+        });
 
-    data.sort((a, b) => {
-        const aPriority = a.lastDaysAgo === null ? -1 : 0;
-        const bPriority = b.lastDaysAgo === null ? -1 : 0;
-    
-        return (
-            aPriority - bPriority ||
-            b.lastDaysAgo - a.lastDaysAgo || 
-            b.beforeLastDaysAgo - a.beforeLastDaysAgo || 
-            b.oldestDaysAgo - a.oldestDaysAgo
-        );
-    });
-
-    
-    const allDays = {
-        oldest: data.map(site => site.oldestDaysAgo),
-        beforeLast: data.map(site => site.beforeLastDaysAgo),
-        last: data.map(site => site.lastDaysAgo)
-    };
-
-    const minMax = {
-        oldest: [Math.min(...allDays.oldest), Math.max(...allDays.oldest)],
-        beforeLast: [Math.min(...allDays.beforeLast), Math.max(...allDays.beforeLast)],
-        last: [Math.min(...allDays.last), Math.max(...allDays.last)]
-    };
-
-    data.forEach(site => {
-        const row = document.createElement("tr");
+        data.sort((a, b) => {
+            const aPriority = a.lastDaysAgo === null ? -1 : 0;
+            const bPriority = b.lastDaysAgo === null ? -1 : 0;
         
+            return (
+                aPriority - bPriority ||
+                b.lastDaysAgo - a.lastDaysAgo || 
+                b.beforeLastDaysAgo - a.beforeLastDaysAgo || 
+                b.oldestDaysAgo - a.oldestDaysAgo
+            );
+        });
 
-        function replaceNull(d) { return d === null ? "Never" : d }
+        
+        const allDays = {
+            oldest: data.map(site => site.oldestDaysAgo),
+            beforeLast: data.map(site => site.beforeLastDaysAgo),
+            last: data.map(site => site.lastDaysAgo)
+        };
 
-        row.innerHTML = 
-            `<td>${site.site}</td>
+        const minMax = {
+            oldest: [Math.min(...allDays.oldest), Math.max(...allDays.oldest)],
+            beforeLast: [Math.min(...allDays.beforeLast), Math.max(...allDays.beforeLast)],
+            last: [Math.min(...allDays.last), Math.max(...allDays.last)]
+        };
+
+        data.forEach(site => {
+            const row = document.createElement("tr");
             
-            <td style="background-color: ${getGradientColor(site.oldestDaysAgo, minMax.oldest)}">
-                ${replaceNull(site.oldestDaysAgo)}
-            </td>
-            <td style="background-color: ${getGradientColor(site.beforeLastDaysAgo, minMax.beforeLast)}">
-                ${replaceNull(site.beforeLastDaysAgo)}
-            </td>
-            <td style="background-color: ${getGradientColor(site.lastDaysAgo, minMax.last)}">
-                ${replaceNull(site.lastDaysAgo)}
-            </td>`;
 
-        tbody.appendChild(row);
-    });
-    const restoreTable = document.getElementById("rTab");
-    const backupView = document.getElementById("bTab");
-    restoreTable.style.display = "none";
-    backupView.style.display = "block";
+            function replaceNull(d) { return d === null ? "Never" : d }
+
+            row.innerHTML = 
+                `<td>${site.site}</td>
+                
+                <td style="background-color: ${getGradientColor(site.oldestDaysAgo, minMax.oldest)}">
+                    ${replaceNull(site.oldestDaysAgo)}
+                </td>
+                <td style="background-color: ${getGradientColor(site.beforeLastDaysAgo, minMax.beforeLast)}">
+                    ${replaceNull(site.beforeLastDaysAgo)}
+                </td>
+                <td style="background-color: ${getGradientColor(site.lastDaysAgo, minMax.last)}">
+                    ${replaceNull(site.lastDaysAgo)}
+                </td>`;
+
+            tbody.appendChild(row);
+        });
+        const restoreTable = document.getElementById("rTab");
+        const backupView = document.getElementById("bTab");
+        restoreTable.style.display = "none";
+        backupView.style.display = "block";
+    } catch (error) {
+        if (error.message !== "Redirecting...") {
+            console.error("Fetch failed:", error);
+        }
+    }
 }
 
 function backToRestore() {
@@ -214,22 +234,27 @@ async function updateData(modifiedData) {
         prev: originalData,
         new: modifiedData
     };
+    try {
+        const response = await fetchHandleRedirect("history", {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-    const response = await fetch("history", {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
+        const result = await response.json();
 
-    const result = await response.json();
-
-    if (response.ok) {
-        showResponseModal('Data updated successfully!', false);
-        loadHistory();
-    } else {
-        showResponseModal(`Failed to update data: ${result.error}`, true);
+        if (response.ok) {
+            showResponseModal('Data updated successfully!', false);
+            loadHistory();
+        } else {
+            showResponseModal(`Failed to update data: ${result.error}`, true);
+        }
+    } catch (error) {
+        if (error.message !== "Redirecting...") {
+            console.error("Fetch failed:", error);
+        }
     }
 }
 
@@ -345,22 +370,28 @@ function toggleView() {
 }
 
 async function deleteBackup(epoch) {
-    const response = await fetch("revert/?t=" + epoch, {
-        method: "DELETE"
-    });
-    const result = await response.json();
-    if (response.ok) {
-        showResponseModal("Backup deleted successfully!", false);
-        showBackupRestore(); 
-    } else {
-        showResponseModal(`Failed to restore backup: ${result.error}`, true);
+    try {
+        const response = await fetchHandleRedirect("revert/?t=" + epoch, {
+            method: "DELETE"
+        });
+        const result = await response.json();
+        if (response.ok) {
+            showResponseModal("Backup deleted successfully!", false);
+            showBackupRestore(); 
+        } else {
+            showResponseModal(`Failed to restore backup: ${result.error}`, true);
+        }
+    } catch (error) {
+        if (error.message !== "Redirecting...") {
+            console.error("Fetch failed:", error);
+        }
     }
 
 }
 
 function showBackupRestore() {
     
-    fetch("revert")
+    fetchHandleRedirect("revert")
         .then(response => response.json())
         .then(backups => {
             const tbody = document.querySelector("#backup-table tbody");
@@ -398,19 +429,25 @@ function hideBackupRestore() {
 }
 
 async function restoreBackup(timestamp) {
-    const response = await fetch("revert", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ timestamp })
-    });
+    try {
+        const response = await fetchHandleRedirect("revert", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ timestamp })
+        });
 
-    const result = await response.json();
-    if (response.ok) {
-        showResponseModal("Backup restored successfully!", false);
-    } else {
-        showResponseModal(`Failed to restore backup: ${result.error}`, true);
+        const result = await response.json();
+        if (response.ok) {
+            showResponseModal("Backup restored successfully!", false);
+        } else {
+            showResponseModal(`Failed to restore backup: ${result.error}`, true);
+        }
+    } catch (error) {
+        if (error.message !== "Redirecting...") {
+            console.error("Fetch failed:", error);
+        }
     }
 }
 
@@ -435,18 +472,18 @@ function showModalMsgAction(msg, actionButtonMsg, timestamp, func) {
     modal.style.display = "block";
 }
 
-function handleLogout() {
-    fetch('../logout', {
-        method: 'GET',
-    })
-    .then(response => {
-        if (response.redirected) {
-            window.location.href = response.url;
-        } else if (!response.ok) {
+async function handleLogout() {
+    try {
+        const response = await fetchHandleRedirect('../logout', {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
             console.error('Logout failed:', response.statusText);
         }
-    })
-    .catch(error => {
-        console.error('Error during logout:', error);
-    });
+    } catch (error) {
+        if (error.message !== "Redirecting...") {
+            console.error('Error during logout:', error);
+        }
+    }
 }
