@@ -94,15 +94,21 @@ name = carbsimple
 
 ### Using Docker
 
-1. Create a copy of `appvol/conf/config.ini.sample` and setup your username and password
-```
-cp appvol/conf/config.ini.sample appvol/conf/config.ini
-```
-2. Run 
+1. **Download the Latest Release**  
+   Head to the [Releases](https://github.com/shoaib42/releases) page, grab the latest `.zip` file, and unzip it.  
 
-```
-docker-compose up
-```
+2. **Set Up Your Configuration**  
+   Inside the unzipped folder, create a copy of the sample config file and fill in your details:  
+   ```bash
+   cp appvol/conf/config.ini.sample appvol/conf/config.ini
+   ```  
+   Open `config.ini` and set up the users' **usernames** and **passwords**.  
+
+3. **Run the Application**  
+   Execute 
+   ```bash
+   docker-compose up -d
+   ```
 
 ### Without Docker
 
