@@ -1,0 +1,11 @@
+version: '0.1'
+
+services:
+  web:
+    build: .
+    volumes:
+      - ./appvol/conf:/var/www/html/conf
+      - ./appvol/sqdblite:/var/www/html/food/sqdblite
+      - ./appvol/sitedata:/var/www/html/sitechange/sitedata
+    ports:
+      - "8080:80"

@@ -10,25 +10,13 @@ function respondBack($cr) {
     exit;
 }
 
-function compreBeforeAfterImage($a, $b) {
-    if (count($a) !== count($b)) {
-        return false;
-    }
-    for ($i = 0; $i < count($a); $i++) {
-        foreach ($a[$i] as $key => $value) {
-            if (!array_key_exists($key, $b[$i]) || $value !== $b[$i][$key]) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 function validateAndUpdateJson($jsonData) {
     $data = json_decode($jsonData, true);
     if (!isset($data['prev'], $data['new'])) {
         respondBack(array(BAD_REQUEST, array("error" => "Invalid payload structure")));
     }
+
+    $skipTwoHourCheck = $data['skipTwoHourCheck'] ?? false;
 
     $fp = fopen(DATA_FILE, "r+");
     if (!$fp) {
@@ -44,30 +32,33 @@ function validateAndUpdateJson($jsonData) {
     $storedData = json_decode($fileContent, true) ?: [];
 
     // Check if the stored data matches the 'prev' data
-    if (!compreBeforeAfterImage($storedData, $data['prev'])) {
+    if ($storedData !== $data['prev']) {
         flock($fp, LOCK_UN);
         fclose($fp);
         respondBack(array(BAD_REQUEST, array("error" => "Newer updates exist retry sending", "current" => $storedData)));
     }
 
-    // Check if any site was updated within the last 2 hours
-    $now = time();
-    $twoHoursAgo = 1000*($now - (2 * 60 * 60));
-    $recentUpdate = false;
+    // Skip the 2-hour check if the flag is set
+    if (!$skipTwoHourCheck) {
+        // Check if any site was updated within the last 2 hours
+        $now = time();
+        $twoHoursAgo = 1000 * ($now - (2 * 60 * 60));
+        $recentUpdate = false;
 
-    foreach ($storedData as $site) {
-        if ($site['last'] > $twoHoursAgo) {
-            error_log(print_r($site['last'], true));
-            error_log(print_r($twoHoursAgo, true));
-            $recentUpdate = true;
-            break;
+        foreach ($storedData as $siteCode => $site) {
+            if ($site['last'] > $twoHoursAgo) {
+                error_log(print_r($site['last'], true));
+                error_log(print_r($twoHoursAgo, true));
+                $recentUpdate = true;
+                break;
+            }
         }
-    }
 
-    if ($recentUpdate) {
-        flock($fp, LOCK_UN);
-        fclose($fp);
-        respondBack(array(BAD_REQUEST, array("error" => "Today's site was recorded less than 2 hours ago, you can revert to an earlier backup and correct", "current" => $storedData)));
+        if ($recentUpdate) {
+            flock($fp, LOCK_UN);
+            fclose($fp);
+            respondBack(array(BAD_REQUEST, array("error" => "Today's site was recorded less than 2 hours ago, you can revert to an earlier backup and correct", "current" => $storedData)));
+        }
     }
 
     // Create a backup before modifying
@@ -110,7 +101,6 @@ function validateAndUpdateJson($jsonData) {
 
     respondBack(array(OK, array("status" => "ok", "backup" => $backupFile)));
 }
-
 function pruneOldBackups() {
     $backupFiles = glob(BACKUP_DIR . "/site_data_*.json");
     $now = time();

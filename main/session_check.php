@@ -1,6 +1,6 @@
 <?php
 // session_check.php
-require_once __DIR__ . "/defs.php";
+require_once __DIR__ . "/config.php";
 
 session_start();
 
@@ -45,6 +45,7 @@ function check_session() {
         return;
     }
     global $paths;
+    global $timeout_seconds;
 
     if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
         $redirect = $_SERVER['REQUEST_URI'];
@@ -53,7 +54,7 @@ function check_session() {
         exit();
     }
 
-    $timeout = 600; // 10 minutes
+    $timeout = $timeout_seconds;
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
         $redirect = $_SERVER['REQUEST_URI'];
         $longestMatch = findLongestMatchingPath($redirect);

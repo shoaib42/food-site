@@ -31,14 +31,13 @@ cd output/$wdir
 cp -r $rt_dir/food/php food
 cp -r $rt_dir/food/react/build/* food/.
 cp -r $rt_dir/sitechange .
-mkdir sitechange/sitedata
 cp -r $rt_dir/main/* .
 cp -r $rt_dir/main/.htaccess .
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i "" "s|foobar|$rootPath|g" defs.php #Mac has to do things differently!
+    sed -i "" "s|foodsite|$rootPath|g" conf/config.ini.sample #Mac has to do things differently!
 else
-    sed -i "s|foobar|$rootPath|g" defs.php
+    sed -i "s|foodsite|$rootPath|g" conf/config.ini.sample
 fi
 cd -
 
@@ -115,39 +114,36 @@ echo
 echo "-------------------------------------------------------------------------------"
 echo "Setup Instructions"
 echo "-------------------------------------------------------------------------------"
-echo "1. Create $wdir/sitechange/sitedata/site_data.json with your site rotation history."
-echo "    Use the $wdir/sitechange/site_data.json.sample as a reference"
 echo
-echo "2. Copy the directory $wdir to /var/www/$wdir:"
+echo "1. Copy the directory $wdir to /var/www/$wdir:"
 echo "   sudo cp -r $wdir /var/www/$wdir"
 echo
-echo "3. Use the script in $wdir/tools/register_user.php to create users and add them to $wdir/users.php"
+echo "2. Add users and their passwords to $wdir/conf/config.ini.sample and rename it to $wdir/conf/config.ini"
+echo "   Plain text passwords will be hashed on the first read of the ini file, using bcrypt"
 echo
-echo "4. Initialize the SQLite database:"
-echo "   cd /var/www/$wdir/food/"
-echo "   php tools/init_sqlite.php" 
-echo "   Alternatively, update the configs for MySQL in $wdir/food/config.php"
+echo "3. Optional - If you want to use mysql for the food db you can set the configs $wdir/conf/config.ini"
+echo "     sqlite is good enough for the food db"
 echo
-echo "5. Change ownership of the directory /var/www/$wdir to the web server user:"
+echo "4. Very Important! Change ownership of the directory /var/www/$wdir to the web server user:"
 echo "   sudo chown -R www-data:www-data /var/www/$wdir"
 echo
 
 
 if [ "$web" == "apache" ]; then
-    echo "6. For Apache:"
+    echo "5. For Apache:"
     echo "   Copy the ${wdir}_apache.conf file to /etc/apache2/sites-available/${wdir}.conf:"
     echo "   sudo cp ${wdir}_apache.conf /etc/apache2/sites-available/${wdir}.conf"
     echo "   Enable the site and reload Apache:"
     echo "   sudo a2ensite $wdir && sudo systemctl reload apache2"
 elif [ "$web" == "nginx" ]; then
-    echo "6. For Nginx:"
+    echo "5. For Nginx:"
     echo "   Copy the ${wdir}_nginx.conf file to /etc/nginx/sites-available/$wdir.conf:"
     echo "   sudo cp ${wdir}_nginx.conf /etc/nginx/sites-available/$wdir.conf"
     echo "   Enable the site and reload Nginx:"
     echo "   sudo ln -sf /etc/nginx/sites-available/$wdir.conf /etc/nginx/sites-enabled/"
     echo "   sudo systemctl reload nginx"
 else
-    echo "6. Configurations not available for $web server. Configure manually."
+    echo "5. Configurations not available for $web server. Configure manually."
 fi
 
 echo
