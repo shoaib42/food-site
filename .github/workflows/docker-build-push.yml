@@ -35,7 +35,7 @@ jobs:
           cp -r appvol release/
           cp docker-compose.yml release/
           cd release
-          zip -r ../food-site-app-v${{ github.ref_name }}.zip .
+          zip -r ../food-site-app-${{ github.ref_name }}.zip .
 
       - name: Create GitHub Release
         id: create_release
@@ -52,6 +52,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./food-site-app-v${{ github.ref_name }}.zip
-          asset_name: food-site-app-v${{ github.ref_name }}.zip
+          asset_path: ./food-site-app-${{ github.ref_name }}.zip
+          asset_name: food-site-app-${{ github.ref_name }}.zip
           asset_content_type: application/zip
