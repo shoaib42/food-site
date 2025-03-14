@@ -2,7 +2,7 @@ services:
   web:
     # Uncomment the following line and comment the image : to build locally
     # build: .
-    image: shoaib42/food-site-app:latest.
+    image: shoaib42/food-site-app:latest
     volumes:
       - ./appvol/conf:/var/www/html/conf
       - ./appvol/sqdblite:/var/www/html/food/sqdblite

@@ -485,10 +485,12 @@ function clearInput(inputId) {
 function openAddSiteModal() {
     const modal = document.getElementById("add-site-modal");
     if (currentSiteCode) {
+        document.getElementById("site-form-title").textContent = "Update Site";
         document.getElementById("form-confirm-btn").textContent = "Update Site";
         document.getElementById("site").readOnly = true;
         document.getElementById("site").style.background = "#DBDBDB";
     } else {
+        document.getElementById("site-form-title").textContent = "Add New Site";
         document.getElementById("form-confirm-btn").textContent = "Add Site";
         document.getElementById("site").readOnly = false;
         document.getElementById("site").style.background = "#FFFFFF";
