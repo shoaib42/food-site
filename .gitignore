@@ -1,2 +1,7 @@
-output/*
-!output/.keep
+output/
+appvol/conf/*
+!appvol/conf/config.ini.sample
+appvol/sitedata/*
+!appvol/sitedata/.keep
+appvol/sqdblite/*
+!appvol/sqdblite/.keep

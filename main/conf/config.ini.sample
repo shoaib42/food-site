@@ -1,0 +1,30 @@
+[users]
+; foo = barbat
+
+[session_timeout]
+timeout = 600
+
+[allowed_ip_ranges]
+; 0 = 10.6.0.0/16
+; 1 = 192.168.0.0/24
+
+[paths]
+rootPath = /foodsite
+
+[rate_limit]
+max_login_attempts = 5
+rl_login_time_window = 60
+
+[database]
+; For MySQL change dbtype to mysql
+dbtype = sqlite
+
+[mysql]
+host = "localhost"
+user = "food"
+password = "mypassword"
+name = "carbsimple"
+
+[sqlite]
+location = "sqdblite"
+name = "carbsimple"

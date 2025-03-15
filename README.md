@@ -5,6 +5,9 @@ A web application that combines two tools, both of which can be installed as a P
 2. **Site Rotation History**: A feature to track site rotation.
 
 ---
+## Caution
+
+If hosting and making this available on the internet, please for the love of security have SSL setup.
 
 ## Features
 
@@ -27,9 +30,9 @@ The **Site Rotation History** feature allows you to track and manage pump infusi
 
 1. Main page gives you the option of viewing or adding a new site (slide the switch to change from readonly mode for adding a site entry)
 
-![Site History](images/sr/sr_main.png) ![View Individual site History](images/sr/sr_read_only.png) ![Add todays site](images/sr/sr_update.png)
+![Site History](images/sr/sr_main.png) ![View Individual site History](images/sr/sr_read_only.png) ![Add new site](images/sr/sr_add_new_site.png)  ![Update view](images/sr/sr_update.png) ![Update view Options](images/sr/sr_options.png) ![Update site](images/sr/sr_modify.png)
 
-2. Prevents a new site being added within 2 hours of the last one, but can be done by first restoring a previous history
+2. Prevents a new site being added within 2 hours of the last one, but can be done by first restoring a previous history or modifying the last used site.
 
 ![2 hour limit](images/sr/sr_2hr_limit.png)
 
@@ -42,9 +45,70 @@ The **Site Rotation History** feature allows you to track and manage pump infusi
 
 ## Setup
 
+
+### Configuration file
+
+The file gives you a place to create your users, and some bells 
+```
+; You can set multiple username and passwords, plaintext passwords are overwritten with bcrypt hashed passwords on the first access.
+[users]
+foo = bar
+
+; To increase or decrease the session (login) timeout
+[session_timeout]
+timeout = 600
+
+; This is provided to allow access without a password for cases where the app is going to be setup in a homelab.
+[allowed_ip_ranges]
+; 0 = 10.6.0.0/16
+; 1 = 192.168.0.0/24
+; 2 = 172.18.0.1
+
+; Do not change this for docker, unless you want to build it yourself
+; (use this path for reverse proxy)
+[paths]
+rootPath = /foodsite
+
+[rate_limit]
+max_login_attempts = 5
+rl_login_time_window = 60
+
+; Switch between "sqlite" or "mysql"
+[database]
+dbtype = sqlite
+
+; The db that stores the food and carbs
+; Do not change this for docker
+[sqlite]
+location = sqdblite
+name = carbsimple
+
+; Don't bother with mysql, its meant for folks who want to do things a bit different
+[mysql]
+host = localhost
+user = food
+password = mypassword
+name = carbsimple
+
+```
+
 ### Using Docker
 
-Planned for later
+1. **Download the Latest Release**  
+   Head to the [Releases](https://github.com/shoaib42/releases) page, grab the latest `.zip` file, and unzip it.  
+
+2. **Set Up Your Configuration**  
+   Inside the unzipped folder, create a copy of the sample config file and fill in your details:  
+   ```bash
+   cp appvol/conf/config.ini.sample appvol/conf/config.ini
+   ```  
+   Open `config.ini` and set up the users' **usernames** and **passwords**.  
+
+3. **Run the Application**  
+   Execute 
+   ```bash
+   docker-compose up -d
+   ```
 
 ### Without Docker
 
@@ -83,40 +147,41 @@ This will:
 1. Build the React app.
 2. Generate the necessary configuration files for your web server.
 3. Provide instructions for deploying the application.
-4. The deployable directory and configuration fill will be in the `output` directory.
+4. The deployable directory and configuration file will be generated in the `output` directory.
 
 ### Step 3: Deploy the Application
-Follow the instructions printed by the `setup.sh` script to:
-1. Create a `site_data.json` 
-2. Copy the generated files to your web server directory.
-3. Configure your web server (Apache or Nginx).
-4. Set up the database (SQLite or MySQL).
+Follow the instructions printed by the `setup.sh`
+
+---
+
+### Site data schema
+
+*Note that the schema has changed from an array of site objects to the one following to avoid duplications
+If you are using the older version please convert to the newer schema*
 
 `site_data.json` has the following schema, time is stored as epoch milliseconds and 0 will be treated as Never
 ```
-[
-    {
-        "site": "<Short string1>",
+{
+    "<Short string1>" : {
         "full": "<Descriptive string1>",
         "oldest": <epoch>,
         "beforeLast": <epoch>,
         "last": <epoch>
     },
     ...
-    {
-        "site": "<Short stringN>",
+    "<Short stringN>" : {
         "full": "<Descriptive stringN>",
         "oldest": <epoch>,
         "beforeLast": <epoch>,
         "last": <epoch>
     },
-]
+}
 ```
 
 ---
 
 ## Contributing
-Contributions are welcome! If you’d like to contribute.
+Contributions are welcome!
 
 ---
 
